@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Loja • E-commerce</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <a href="/">Loja</a>
+      <nav>
+        <button data-view="catalog">Catálogo</button
+        ><button data-view="account">Minha conta</button
+        ><button data-view="cart">Carrinho</button
+        ><button data-view="orders">Pedidos</button
+        ><button id="managebutton" data-view="manage" hidden>Gestão</button
+        ><button id="logout" hidden>Sair</button>
+      </nav>
+    </header>
+    <main>
+      <p id="identity"></p>
+      <p id="message" role="status" aria-live="polite"></p>
+      <section id="catalog">
+        <h1>Encontre seu próximo produto</h1>
+        <form id="search">
+          <input
+            name="search"
+            placeholder="Buscar produtos"
+            maxlength="100"
+          /><select name="categoryId" id="categories">
+            <option value="">Todas as categorias</option></select
+          ><button>Buscar</button>
+        </form>
+        <div id="products" class="grid"></div>
+        <div>
+          <button id="previous">Anterior</button><span id="page"></span
+          ><button id="next">Próxima</button>
+        </div>
+      </section>
+      <section id="account" hidden>
+        <h1>Minha conta</h1>
+        <div id="authforms" class="grid">
+          <form id="login">
+            <h2>Entrar</h2>
+            <label>E-mail<input name="email" type="email" required /></label
+            ><label
+              >Senha<input name="password" type="password" required /></label
+            ><button>Entrar</button>
+          </form>
+          <form id="register">
+            <h2>Criar conta</h2>
+            <label>Nome<input name="name" maxlength="160" required /></label
+            ><label>E-mail<input name="email" type="email" required /></label
+            ><label
+              >Senha (12 a 72 caracteres)<input
+                name="password"
+                type="password"
+                minlength="12"
+                maxlength="72"
+                required /></label
+            ><button>Criar conta</button>
+          </form>
+        </div>
+        <div id="profile" hidden>
+          <form id="profileform">
+            <label>Nome<input name="name" required maxlength="160" /></label
+            ><button>Salvar nome</button>
+          </form>
+          <form id="passwordform">
+            <h2>Alterar senha</h2>
+            <label
+              >Senha atual<input
+                name="currentPassword"
+                type="password"
+                required /></label
+            ><label
+              >Nova senha<input
+                name="newPassword"
+                type="password"
+                minlength="12"
+                maxlength="72"
+                required /></label
+            ><button>Alterar senha e sair</button>
+          </form>
+          <h2>Endereços</h2>
+          <div id="addresses"></div>
+          <form id="addressform">
+            <label>Rua<input name="street" required maxlength="200" /></label
+            ><label>Número<input name="number" required maxlength="30" /></label
+            ><label
+              >Complemento<input name="complement" maxlength="120" /></label
+            ><label>Cidade<input name="city" required maxlength="120" /></label
+            ><label
+              >UF<input
+                name="state"
+                required
+                minlength="2"
+                maxlength="2"
+                placeholder="SC" /></label
+            ><label
+              >CEP (8 dígitos)<input
+                name="postalCode"
+                required
+                pattern="[0-9]{8}" /></label
+            ><button>Adicionar endereço</button>
+          </form>
+        </div>
+      </section>
+      <section id="cart" hidden>
+        <h1>Seu carrinho</h1>
+        <div id="cartitems"></div>
+        <form id="checkout">
+          <label
+            >Endereço<select
+              name="addressId"
+              id="checkoutaddresses"
+              required
+            ></select></label
+          ><label
+            >Pagamento<select name="method">
+              <option>PIX</option>
+              <option>CARD</option>
+              <option>BOLETO</option>
+            </select></label
+          ><label>Cupom<input name="coupon" maxlength="40" /></label>
+          <p>A compra ficará aguardando a confirmação do pagamento.</p>
+          <button>Criar pedido</button>
+        </form>
+      </section>
+      <section id="orders" hidden>
+        <h1>Seus pedidos</h1>
+        <div id="orderlist"></div>
+        <div id="orderdetail"></div>
+      </section>
+      <section id="manage" hidden>
+        <h1>Gestão</h1>
+        <p id="managementhelp"></p>
+        <label>Operação<select id="operation"></select></label>
+        <form id="managementform"></form>
+        <pre id="managementresult"></pre>
+      </section>
+    </main>
+    <footer>E-commerce em Spring • valores em reais</footer>
+  </body>
+</html>
