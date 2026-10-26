@@ -1,10 +1,7 @@
 # Migração do Node/Express para Spring
 
 ## Fonte e decisões
-
-Foram examinados o servidor Express, as rotas, os middlewares, os controllers, os modelos, os scripts do navegador, os jobs e a estrutura do dump SQL do ZIP `si-25-7a-3a-avaliacao-guilhermeroecker-gian-eduardo.zip`. O arquivo foi preservado. A extração usada para análise ficou em `/tmp`, sem copiar `.env`, dump ou dados pessoais para o código novo.
-
-O repositório já tinha três projetos Spring sem implementação de domínio. A nova implementação fica na raiz como aplicação modular. Isso permite que criação do pedido, desconto do cupom, baixa de estoque, pagamento pendente e limpeza do carrinho sejam confirmados ou revertidos juntos. Os três esqueletos foram inicialmente preservados e depois removidos na revisão da organização: continham apenas a classe inicial do Spring, configuração básica, teste de contexto e arquivos Maven, sem implementação de domínio. O código funcional fica exclusivamente em `src/`, com um único `pom.xml` na raiz. A aplicação não implementa arquitetura distribuída ou eventos Kafka; separar serviços exigiria definir reservas, compensações e entrega confiável de eventos.
+Foram examinados o servidor Express, as rotas, os middlewares, os controllers, os modelos, os scripts do navegador, os jobs e a estrutura do dump SQL do repositorio `E-commerce-Node.js`.
 
 ## Falhas encontradas e correções
 
