@@ -3,145 +3,464 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Loja • E-commerce</title>
+    <meta name="theme-color" content="#6366f1" />
+    <title>Arôme • Produtos</title>
+    <link rel="icon" href="/assets/images/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/fonts/lexend.css" />
     <link rel="stylesheet" href="/style.css" />
-    <script src="/app.js" defer></script>
+    <script type="module" src="/app.js"></script>
   </head>
   <body>
-    <header>
-      <a href="/">Loja</a>
-      <nav>
-        <button data-view="catalog">Catálogo</button
-        ><button data-view="account">Minha conta</button
-        ><button data-view="cart">Carrinho</button
-        ><button data-view="orders">Pedidos</button
-        ><button id="managebutton" data-view="manage" hidden>Gestão</button
-        ><button id="logout" hidden>Sair</button>
-      </nav>
+    <a class="skip-link" href="#main">Ir para o conteúdo</a>
+    <header class="site-header">
+      <a class="brand" href="#catalog" aria-label="Arôme — início"
+        >Arôme<span class="brand-dot">.</span></a
+      >
+      <div class="header-actions">
+        <span id="identity">Olá, visitante</span>
+        <button
+          class="icon-button theme-button"
+          title="Alternar tema"
+          aria-label="Ativar tema escuro"
+          data-icon="sun"
+        ></button>
+        <button id="accountbutton" class="header-button" data-view="account">
+          <span data-icon="user"></span
+          ><span id="accountlabel">Login / Cadastro</span>
+        </button>
+        <button
+          id="cartbutton"
+          class="header-button"
+          data-view="cart"
+          aria-label="Carrinho"
+        >
+          <span data-icon="cart"></span
+          ><span class="desktop-label">Carrinho</span
+          ><span id="cartcount" class="count" hidden>0</span>
+        </button>
+        <button id="menubutton" class="header-button" aria-haspopup="dialog">
+          <span data-icon="menu"></span>Menu
+        </button>
+      </div>
     </header>
-    <main>
-      <p id="identity"></p>
-      <p id="message" role="status" aria-live="polite"></p>
-      <section id="catalog">
-        <h1>Encontre seu próximo produto</h1>
-        <form id="search">
-          <input
-            name="search"
-            placeholder="Buscar produtos"
-            maxlength="100"
-          /><select name="categoryId" id="categories">
-            <option value="">Todas as categorias</option></select
-          ><button>Buscar</button>
+    <main id="main">
+      <section id="catalog" class="page">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">ESCOLHAS PARA O SEU DIA</p>
+            <h1>Produtos</h1>
+          </div>
+          <p class="heading-note">Encontre algo que combina com você.</p>
+        </div>
+        <form id="search" class="search-bar" role="search">
+          <label class="search-input"
+            ><span data-icon="search"></span
+            ><span class="sr-only">Buscar produtos</span
+            ><input
+              name="search"
+              placeholder="O que você está procurando?"
+              maxlength="100"
+          /></label>
+          <label
+            ><span class="sr-only">Categoria</span
+            ><select name="categoryId" id="categories">
+              <option value="">Todas as categorias</option>
+            </select></label
+          >
+          <label
+            ><span class="sr-only">Loja</span
+            ><select name="companyId" id="stores">
+              <option value="">Todas as lojas</option>
+            </select></label
+          >
+          <button type="submit">Buscar</button>
         </form>
-        <div id="products" class="grid"></div>
-        <div>
-          <button id="previous">Anterior</button><span id="page"></span
-          ><button id="next">Próxima</button>
+        <div class="section-meta">
+          <span id="catalogcount">Carregando produtos…</span
+          ><span class="muted">Feito para facilitar suas escolhas</span>
+        </div>
+        <div id="products" class="product-grid" aria-live="polite"></div>
+        <div class="pagination">
+          <button id="previous" class="button-outline" type="button">
+            ← Anterior</button
+          ><span id="page"></span
+          ><button id="next" class="button-outline" type="button">
+            Próxima →
+          </button>
         </div>
       </section>
-      <section id="account" hidden>
-        <h1>Minha conta</h1>
-        <div id="authforms" class="grid">
-          <form id="login">
-            <h2>Entrar</h2>
-            <label>E-mail<input name="email" type="email" required /></label
-            ><label
-              >Senha<input name="password" type="password" required /></label
-            ><button>Entrar</button>
-          </form>
-          <form id="register">
-            <h2>Criar conta</h2>
-            <label>Nome<input name="name" maxlength="160" required /></label
-            ><label>E-mail<input name="email" type="email" required /></label
-            ><label
-              >Senha (12 a 72 caracteres)<input
-                name="password"
-                type="password"
-                minlength="12"
-                maxlength="72"
-                required /></label
-            ><button>Criar conta</button>
-          </form>
+
+      <section id="account" class="page" hidden>
+        <div id="authforms" class="auth-scene">
+          <div class="auth-card">
+            <a href="#catalog" class="auth-brand">Arôme<span>.</span></a>
+            <div class="auth-tabs" role="tablist" aria-label="Acesso à conta">
+              <button
+                id="tab-login"
+                role="tab"
+                aria-selected="true"
+                aria-controls="login"
+              >
+                Login</button
+              ><button
+                id="tab-register"
+                role="tab"
+                aria-selected="false"
+                aria-controls="register"
+                tabindex="-1"
+              >
+                Cadastro
+              </button>
+            </div>
+            <form id="login" role="tabpanel" aria-labelledby="tab-login">
+              <h1>Bem-vindo de volta!</h1>
+              <p class="muted">Entre na sua conta e sinta-se em casa.</p>
+              <label
+                >E-mail<input
+                  name="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  autocomplete="username"
+                  required
+                  maxlength="254"
+              /></label>
+              <label
+                >Senha<span class="password-input"
+                  ><input
+                    name="password"
+                    type="password"
+                    placeholder="Sua senha"
+                    autocomplete="current-password"
+                    required /><button
+                    type="button"
+                    class="password-toggle"
+                    aria-label="Mostrar senha"
+                    data-password="login"
+                  >
+                    <span data-icon="eye"></span></button></span
+              ></label>
+              <button class="full-width" type="submit">
+                Entrar <span data-icon="arrow"></span>
+              </button>
+              <p class="auth-switch">
+                Ainda não tem conta?
+                <button type="button" class="text-button" id="registershortcut">
+                  Cadastre-se
+                </button>
+              </p>
+            </form>
+            <form
+              id="register"
+              role="tabpanel"
+              aria-labelledby="tab-register"
+              hidden
+            >
+              <h1>Crie sua conta</h1>
+              <p class="muted">Seu próximo achado começa aqui.</p>
+              <label
+                >Nome completo<input
+                  name="name"
+                  placeholder="Como podemos chamar você?"
+                  autocomplete="name"
+                  required
+                  maxlength="160"
+              /></label>
+              <label
+                >E-mail<input
+                  name="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  autocomplete="email"
+                  required
+                  maxlength="254"
+              /></label>
+              <label
+                >Senha<input
+                  name="password"
+                  type="password"
+                  placeholder="Crie uma senha segura"
+                  autocomplete="new-password"
+                  minlength="12"
+                  maxlength="72"
+                  required
+                /><small>Use de 12 a 72 caracteres.</small></label
+              >
+              <button class="full-width" type="submit">
+                Criar conta <span data-icon="arrow"></span>
+              </button>
+              <p class="auth-switch">
+                Já tem uma conta?
+                <button type="button" class="text-button" id="loginshortcut">
+                  Entre aqui
+                </button>
+              </p>
+            </form>
+            <div class="auth-bottom">
+              <a href="#catalog">← Voltar para a loja</a
+              ><button
+                type="button"
+                class="icon-button theme-button"
+                aria-label="Ativar tema escuro"
+                title="Alternar tema"
+                data-icon="sun"
+              ></button>
+            </div>
+          </div>
         </div>
         <div id="profile" hidden>
-          <form id="profileform">
-            <label>Nome<input name="name" required maxlength="160" /></label
-            ><button>Salvar nome</button>
-          </form>
-          <form id="passwordform">
-            <h2>Alterar senha</h2>
-            <label
-              >Senha atual<input
-                name="currentPassword"
-                type="password"
-                required /></label
-            ><label
-              >Nova senha<input
-                name="newPassword"
-                type="password"
-                minlength="12"
-                maxlength="72"
-                required /></label
-            ><button>Alterar senha e sair</button>
-          </form>
-          <h2>Endereços</h2>
-          <div id="addresses"></div>
-          <form id="addressform">
-            <label>Rua<input name="street" required maxlength="200" /></label
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">DO SEU JEITO</p>
+              <h1>Minha conta</h1>
+            </div>
+            <button class="button-outline" data-view="orders">
+              <span data-icon="box"></span>Meus pedidos
+            </button>
+          </div>
+          <div class="profile-grid">
+            <form id="profileform" class="panel">
+              <div class="panel-title">
+                <span data-icon="user"></span>
+                <h2>Seus dados</h2>
+              </div>
+              <p id="profileemail" class="muted"></p>
+              <label
+                >Nome completo<input
+                  name="name"
+                  required
+                  maxlength="160"
+                  autocomplete="name" /></label
+              ><button>Salvar alterações</button>
+            </form>
+            <form id="passwordform" class="panel">
+              <div class="panel-title">
+                <span data-icon="lock"></span>
+                <h2>Segurança</h2>
+              </div>
+              <label
+                >Senha atual<input
+                  name="currentPassword"
+                  type="password"
+                  autocomplete="current-password"
+                  required /></label
+              ><label
+                >Nova senha<input
+                  name="newPassword"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="12"
+                  maxlength="72"
+                  required /></label
+              ><button class="button-outline">Alterar senha e sair</button>
+            </form>
+          </div>
+          <div class="page-heading compact">
+            <div>
+              <h2>Meus endereços</h2>
+              <p class="muted">Para onde vai o seu próximo pedido?</p>
+            </div>
+          </div>
+          <div id="addresses" class="address-grid"></div>
+          <form id="addressform" class="panel form-grid">
+            <h3 class="span-all">Adicionar endereço</h3>
+            <label class="span-two"
+              >Rua<input
+                name="street"
+                required
+                maxlength="200"
+                autocomplete="address-line1" /></label
             ><label>Número<input name="number" required maxlength="30" /></label
             ><label
               >Complemento<input name="complement" maxlength="120" /></label
-            ><label>Cidade<input name="city" required maxlength="120" /></label
             ><label
-              >UF<input
-                name="state"
+              >Cidade<input
+                name="city"
                 required
-                minlength="2"
-                maxlength="2"
-                placeholder="SC" /></label
+                maxlength="120"
+                autocomplete="address-level2" /></label
             ><label
-              >CEP (8 dígitos)<input
+              >Estado<select name="state" required>
+                <option value="">Selecione</option>
+              </select></label
+            ><label
+              >CEP<input
                 name="postalCode"
                 required
-                pattern="[0-9]{8}" /></label
-            ><button>Adicionar endereço</button>
+                inputmode="numeric"
+                pattern="[0-9]{8}"
+                maxlength="8"
+                placeholder="Apenas números"
+                autocomplete="postal-code"
+            /></label>
+            <div class="span-all"><button>Adicionar endereço</button></div>
           </form>
         </div>
       </section>
-      <section id="cart" hidden>
-        <h1>Seu carrinho</h1>
-        <div id="cartitems"></div>
-        <form id="checkout">
-          <label
-            >Endereço<select
-              name="addressId"
-              id="checkoutaddresses"
-              required
-            ></select></label
-          ><label
-            >Pagamento<select name="method">
-              <option>PIX</option>
-              <option>CARD</option>
-              <option>BOLETO</option>
-            </select></label
-          ><label>Cupom<input name="coupon" maxlength="40" /></label>
-          <p>A compra ficará aguardando a confirmação do pagamento.</p>
-          <button>Criar pedido</button>
-        </form>
+
+      <section id="cart" class="page" hidden>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">SUAS ESCOLHAS</p>
+            <h1>Meu carrinho</h1>
+          </div>
+          <button class="button-outline" data-view="catalog">
+            ← Continuar comprando
+          </button>
+        </div>
+        <div class="checkout-layout">
+          <div><div id="cartitems"></div></div>
+          <aside class="panel checkout-panel">
+            <h2>Resumo do pedido</h2>
+            <div class="summary-line">
+              <span>Subtotal</span><strong id="carttotal">R$ 0,00</strong>
+            </div>
+            <form id="checkout">
+              <label
+                >Endereço de entrega<select
+                  name="addressId"
+                  id="checkoutaddresses"
+                  required
+                ></select></label
+              ><button type="button" class="text-button" data-view="account">
+                Cadastrar um endereço</button
+              ><label
+                >Forma de pagamento<select name="method">
+                  <option value="PIX">Pix</option>
+                  <option value="CARD">Cartão</option>
+                  <option value="BOLETO">Boleto</option>
+                </select></label
+              ><label
+                >Cupom de desconto<input
+                  name="coupon"
+                  maxlength="40"
+                  placeholder="Tem um cupom?"
+              /></label>
+              <p class="checkout-note">
+                <span data-icon="lock"></span>Você acompanha a confirmação do
+                pagamento nos seus pedidos. O desconto do cupom é calculado ao
+                finalizar.
+              </p>
+              <button id="checkoutsubmit" class="full-width">
+                Criar pedido <span data-icon="arrow"></span>
+              </button>
+            </form>
+          </aside>
+        </div>
       </section>
-      <section id="orders" hidden>
-        <h1>Seus pedidos</h1>
-        <div id="orderlist"></div>
+
+      <section id="orders" class="page" hidden>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">CADA ACHADO, UMA HISTÓRIA</p>
+            <h1>Meus pedidos</h1>
+          </div>
+          <button class="button-outline" data-view="catalog">
+            Explorar produtos
+          </button>
+        </div>
+        <div id="orderlist" class="orders-grid"></div>
         <div id="orderdetail"></div>
+        <div class="pagination">
+          <button id="ordersprevious" class="button-outline">← Anterior</button
+          ><span id="orderspage"></span
+          ><button id="ordersnext" class="button-outline">Próxima →</button>
+        </div>
       </section>
-      <section id="manage" hidden>
-        <h1>Gestão</h1>
-        <p id="managementhelp"></p>
-        <label>Operação<select id="operation"></select></label>
-        <form id="managementform"></form>
-        <pre id="managementresult"></pre>
+
+      <section id="manage" class="page" hidden>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">TUDO NO SEU LUGAR</p>
+            <h1>Gestão da loja</h1>
+          </div>
+          <span id="managerrole" class="badge"></span>
+        </div>
+        <nav
+          id="managementtabs"
+          class="management-tabs"
+          aria-label="Áreas de gestão"
+        ></nav>
+        <div id="managementcontent" aria-live="polite"></div>
       </section>
     </main>
-    <footer>E-commerce em Spring • valores em reais</footer>
+    <footer class="site-footer">
+      <a class="brand" href="#catalog">Arôme<span class="brand-dot">.</span></a>
+      <p>Pequenas escolhas. Novas possibilidades.</p>
+      <span>Seu próximo achado está aqui.</span>
+    </footer>
+    <div
+      id="message"
+      class="toast"
+      role="status"
+      aria-live="polite"
+      hidden
+    ></div>
+    <dialog id="menudialog" class="menu-dialog" aria-labelledby="menutitle">
+      <div class="dialog-heading">
+        <h2 id="menutitle">Seu espaço</h2>
+        <button
+          class="icon-button close-dialog"
+          aria-label="Fechar menu"
+          data-icon="close"
+        ></button>
+      </div>
+      <p class="muted">O que vamos fazer hoje?</p>
+      <nav class="drawer-nav">
+        <button data-view="catalog">
+          <span data-icon="grid"></span>Início<span
+            data-icon="arrow"
+          ></span></button
+        ><button data-view="account">
+          <span data-icon="user"></span>Minha conta<span
+            data-icon="arrow"
+          ></span></button
+        ><button data-view="cart">
+          <span data-icon="cart"></span>Carrinho<span
+            data-icon="arrow"
+          ></span></button
+        ><button data-view="orders">
+          <span data-icon="box"></span>Meus pedidos<span
+            data-icon="arrow"
+          ></span></button
+        ><button id="managebutton" data-view="manage" hidden>
+          <span data-icon="store"></span>Gestão<span
+            data-icon="arrow"
+          ></span></button
+        ><button id="menutheme" type="button">
+          <span data-icon="moon"></span>Alternar tema</button
+        ><button id="logout" hidden>
+          <span data-icon="logout"></span>Sair da conta
+        </button>
+      </nav>
+    </dialog>
+    <dialog id="editdialog" class="edit-dialog" aria-labelledby="edittitle">
+      <div class="dialog-heading">
+        <div>
+          <p id="editeyebrow" class="eyebrow">GESTÃO</p>
+          <h2 id="edittitle"></h2>
+        </div>
+        <button
+          class="icon-button close-dialog"
+          aria-label="Fechar formulário"
+          data-icon="close"
+        ></button>
+      </div>
+      <form id="editform"></form>
+    </dialog>
+    <dialog
+      id="productdialog"
+      class="edit-dialog"
+      aria-labelledby="producttitle"
+    >
+      <div class="dialog-heading">
+        <h2 id="producttitle"></h2>
+        <button
+          class="icon-button close-dialog"
+          aria-label="Fechar produto"
+          data-icon="close"
+        ></button>
+      </div>
+      <div id="productdetail"></div>
+    </dialog>
   </body>
 </html>

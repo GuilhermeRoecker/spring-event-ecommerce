@@ -34,6 +34,29 @@ Acesse http://localhost:8080. O PostgreSQL fica na rede interna do Compose e per
 
 Em hospedagem com HTTPS, use `COOKIE_SECURE=true`. O padrão `false` permite testar em HTTP local. A aplicação usa sessão no servidor, cookie HttpOnly/SameSite e CSRF. A interface obtém o token CSRF antes das mutações e o renova após login/logout.
 
+## Interface Arôme
+
+O visual retoma a identidade do projeto original: cabeçalho roxo, detalhes em rosa, fonte Lexend, menu lateral e login com abas sobre o fundo original. Há tema claro/escuro e layouts adaptados para celular.
+
+- Início e filtros: `http://localhost:8080/#catalog`.
+- Login/cadastro ou perfil da conta conectada: `http://localhost:8080/#account`.
+- Carrinho e pedidos: `/#cart` e `/#orders`.
+- Gestão: Menu → Gestão (`/#manage`), conforme o cargo e a empresa da conta.
+
+A gestão usa tabelas e formulários para empresas, produtos, categorias, equipe, cupons e vendas. Os campos apresentam nomes de lojas e categorias em vez de exigir seus IDs. Os pedidos mostram endereço, itens e acompanhamento em português. Fontes, ícones e imagens de fundo são locais; imagens de produtos por URL continuam dependendo do endereço informado.
+
+Para aplicar alterações visuais quando a aplicação está no Docker, execute `docker compose up --build --no-deps -d app` e atualize a página. Esse comando reconstrói somente a aplicação e preserva o banco; é necessário entrar novamente se havia uma sessão aberta.
+
+## Dados fictícios para testes
+
+Com o PostgreSQL do Docker Compose em execução:
+
+```bash
+docker compose exec -T db psql -U ecommerce -d ecommerce -v ON_ERROR_STOP=1 < scripts/seed-demo.sql
+```
+
+O script adiciona três lojas de demonstração, cinco categorias e quinze produtos. Inclui produto sem estoque, última unidade e produto inativo para testar esses cenários. Pode ser reexecutado sem duplicar os registros nem redefinir estoque, preços ou edições existentes. Não cria usuários ou pedidos e não é executado automaticamente ao iniciar a aplicação.
+
 ## Testes e build
 
 ```bash

@@ -484,4 +484,21 @@ class EcommerceIntegrationTest {
         .andExpect(status().isBadRequest());
     assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM purchase_order", Integer.class)).isZero();
   }
+
+  @Test
+  void storefrontAssetsArePublicWithoutOpeningPrivateRoutes() throws Exception {
+    for (String path :
+        List.of(
+            "/",
+            "/app.js",
+            "/style.css",
+            "/assets/js/ui.js",
+            "/assets/js/management.js",
+            "/assets/fonts/lexend.css",
+            "/assets/images/bg_blobbubble_3.png")) {
+      mvc.perform(get(path)).andExpect(status().isOk());
+    }
+    mvc.perform(get("/api/me")).andExpect(status().isUnauthorized());
+    mvc.perform(get("/api/admin/accounts")).andExpect(status().isUnauthorized());
+  }
 }

@@ -38,6 +38,8 @@ public class SecurityConfig {
             a ->
                 a.requestMatchers("/", "/index.html", "/app.js", "/style.css", "/error")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/assets/**")
+                    .permitAll()
                     .requestMatchers(
                         HttpMethod.GET,
                         "/api/auth/csrf",

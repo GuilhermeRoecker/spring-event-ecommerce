@@ -20,7 +20,14 @@ A aplicação é um monólito modular: um processo Spring Boot, um banco e um pr
     │   └── resources/
     │       ├── application.properties
     │       ├── db/migration/    # Migrações Flyway
-    │       └── static/          # HTML, CSS e JavaScript
+    │       └── static/
+    │           ├── index.html   # Estrutura das telas Arôme
+    │           ├── app.js       # Navegação, conta e compra
+    │           ├── style.css    # Estilos e temas responsivos
+    │           └── assets/
+    │               ├── js/      # Gestão e componentes visuais
+    │               ├── fonts/   # Lexend e sua licença
+    │               └── images/  # Fundos do original e favicon
     └── test/java/com/guilherme/ecommerce/
         ├── EcommerceIntegrationTest.java
         └── PostgresIntegrationTest.java
