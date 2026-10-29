@@ -12,48 +12,33 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class CheckoutService {
-  private final Database db;
+  private final CheckoutRepository repository;
   private final CurrentAccount current;
 
-  public CheckoutService(Database db, CurrentAccount current) {
-    this.db = db;
+  public CheckoutService(CheckoutRepository repository, CurrentAccount current) {
+    this.repository = repository;
     this.current = current;
   }
 
   public void lockAccount(long id) {
-    db.one("SELECT id FROM account WHERE id=? FOR UPDATE", id);
+    repository.lockAccount(id);
   }
 
   @Transactional
-  public Map<String, Object> checkout(CommerceController.Checkout r, String key) {
+  public Map<String, Object> checkout(CommerceDtos.Checkout r, String key) {
     long user = current.get().id();
     // Serialize cart changes and retries for this account in the same transaction.
     lockAccount(user);
-    var previous =
-        db.list(
-            "SELECT id,total,status FROM purchase_order WHERE account_id=? AND request_key=?",
-            user,
-            key);
+    var previous = repository.findPreviousOrders(user, key);
     if (!previous.isEmpty()) return previous.getFirst();
-    var address =
-        db.one(
-            "SELECT street,number,complement,city,state,postal_code FROM address WHERE id=? AND"
-                + " account_id=?",
-            r.addressId(),
-            user);
-    var items =
-        db.list(
-            "SELECT product_id,quantity FROM cart_item WHERE account_id=? ORDER BY product_id",
-            user);
+    var address = repository.findOwnedAddress(r.addressId(), user);
+    var items = repository.findCartItems(user);
     if (items.isEmpty()) throw bad("Carrinho vazio");
     BigDecimal subtotal = BigDecimal.ZERO;
     List<Map<String, Object>> products = new ArrayList<>();
     // Every checkout acquires product locks in ID order to avoid lock-order inversion.
     for (var item : items) {
-      var p =
-          db.one(
-              "SELECT id,company_id,name,price,stock,active FROM product WHERE id=? FOR UPDATE",
-              item.get("product_id"));
+      var p = repository.lockProduct(Database.id(item, "product_id"));
       int quantity = ((Number) item.get("quantity")).intValue();
       if (!Boolean.TRUE.equals(p.get("active")) || ((Number) p.get("stock")).intValue() < quantity)
         throw new ResponseStatusException(
@@ -64,68 +49,45 @@ public class CheckoutService {
     BigDecimal discount = BigDecimal.ZERO;
     Long couponId = null;
     if (r.coupon() != null && !r.coupon().isBlank()) {
-      var c = db.one("SELECT * FROM coupon WHERE code=? FOR UPDATE", r.coupon());
-      couponId = db.id(c, "id");
+      var c = repository.lockCoupon(r.coupon());
+      couponId = Database.id(c, "id");
       LocalDate expires = ((java.sql.Date) c.get("expires_on")).toLocalDate();
       if (!Boolean.TRUE.equals(c.get("active"))
           || expires.isBefore(LocalDate.now())
-          || db.id(c, "used") >= db.id(c, "usage_limit")) throw bad("Cupom indisponível");
-      if (!db.list(
-              "SELECT order_id FROM coupon_redemption WHERE coupon_id=? AND account_id=?",
-              couponId,
-              user)
-          .isEmpty()) throw bad("Cupom já utilizado por esta conta");
+          || Database.id(c, "used") >= Database.id(c, "usage_limit"))
+        throw bad("Cupom indisponível");
+      if (!repository.findRedemptions(couponId, user).isEmpty())
+        throw bad("Cupom já utilizado por esta conta");
       discount =
           subtotal
-              .multiply(BigDecimal.valueOf(db.id(c, "percentage")))
+              .multiply(BigDecimal.valueOf(Database.id(c, "percentage")))
               .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-      db.update("UPDATE coupon SET used=used+1 WHERE id=?", couponId);
+      repository.incrementCouponUsage(couponId);
     }
     BigDecimal total = subtotal.subtract(discount);
     String shipping =
         String.join(
             ", ",
             address.values().stream().filter(Objects::nonNull).map(Object::toString).toList());
-    db.update(
-        "INSERT INTO"
-            + " purchase_order(account_id,request_key,subtotal,discount,total,shipping_address,coupon_id)"
-            + " VALUES(?,?,?,?,?,?,?)",
-        user,
-        key,
-        subtotal,
-        discount,
-        total,
-        shipping,
-        couponId);
-    var order =
-        db.one(
-            "SELECT id,total,status FROM purchase_order WHERE account_id=? AND request_key=?",
-            user,
-            key);
-    long orderId = db.id(order, "id");
+    repository.insertOrder(user, key, subtotal, discount, total, shipping, couponId);
+    var order = repository.findCreatedOrder(user, key);
+    long orderId = Database.id(order, "id");
     for (int i = 0; i < items.size(); i++) {
       var item = items.get(i);
       var p = products.get(i);
-      db.update(
-          "INSERT INTO order_item(order_id,product_id,company_id,name,quantity,unit_price)"
-              + " VALUES(?,?,?,?,?,?)",
+      repository.insertOrderItem(
           orderId,
-          p.get("id"),
-          p.get("company_id"),
-          p.get("name"),
-          item.get("quantity"),
-          p.get("price"));
-      db.update("UPDATE product SET stock=stock-? WHERE id=?", item.get("quantity"), p.get("id"));
+          Database.id(p, "id"),
+          Database.id(p, "company_id"),
+          (String) p.get("name"),
+          ((Number) item.get("quantity")).intValue(),
+          (BigDecimal) p.get("price"));
+      repository.decrementStock(((Number) item.get("quantity")).intValue(), Database.id(p, "id"));
     }
-    db.update("INSERT INTO payment(order_id,method) VALUES(?,?)", orderId, r.method().name());
-    db.update("INSERT INTO delivery(order_id) VALUES(?)", orderId);
-    if (couponId != null)
-      db.update(
-          "INSERT INTO coupon_redemption(coupon_id,account_id,order_id) VALUES(?,?,?)",
-          couponId,
-          user,
-          orderId);
-    db.update("DELETE FROM cart_item WHERE account_id=?", user);
+    repository.insertPayment(orderId, r.method().name());
+    repository.insertDelivery(orderId);
+    if (couponId != null) repository.insertRedemption(couponId, user, orderId);
+    repository.clearCart(user);
     return order;
   }
 

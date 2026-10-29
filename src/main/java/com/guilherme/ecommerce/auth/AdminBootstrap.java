@@ -1,6 +1,5 @@
 package com.guilherme.ecommerce.auth;
 
-import com.guilherme.ecommerce.shared.Database;
 import java.util.Locale;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -10,12 +9,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class AdminBootstrap implements ApplicationRunner {
-  private final Database db;
+  private final AccountRepository repository;
   private final Environment env;
   private final PasswordEncoder encoder;
 
-  public AdminBootstrap(Database db, Environment env, PasswordEncoder encoder) {
-    this.db = db;
+  public AdminBootstrap(AccountRepository repository, Environment env, PasswordEncoder encoder) {
+    this.repository = repository;
     this.env = env;
     this.encoder = encoder;
   }
@@ -32,10 +31,7 @@ public class AdminBootstrap implements ApplicationRunner {
       throw new IllegalStateException(
           "Defina BOOTSTRAP_ADMIN_EMAIL e BOOTSTRAP_ADMIN_PASSWORD (12 a 72 caracteres)");
     email = email.trim().toLowerCase(Locale.ROOT);
-    if (db.list("SELECT id FROM account WHERE role='ADMIN'").isEmpty())
-      db.update(
-          "INSERT INTO account(name,email,password_hash,role) VALUES('Administrador',?,?,'ADMIN')",
-          email,
-          encoder.encode(password));
+    if (repository.findAdministrators().isEmpty())
+      repository.insertAdministrator(email, encoder.encode(password));
   }
 }

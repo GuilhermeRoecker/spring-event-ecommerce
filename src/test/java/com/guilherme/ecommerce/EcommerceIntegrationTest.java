@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.guilherme.ecommerce.commerce.CheckoutService;
-import com.guilherme.ecommerce.commerce.CommerceController;
+import com.guilherme.ecommerce.commerce.CommerceDtos;
 import java.util.*;
 import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
@@ -379,8 +379,8 @@ class EcommerceIntegrationTest {
                   try {
                     start.await();
                     checkout.checkout(
-                        new CommerceController.Checkout(
-                            (long) n, CommerceController.Method.PIX, null),
+                        new CommerceDtos.Checkout(
+                            (long) n, CommerceDtos.Method.PIX, null),
                         "concurrent-" + n);
                     return true;
                   } catch (org.springframework.web.server.ResponseStatusException e) {

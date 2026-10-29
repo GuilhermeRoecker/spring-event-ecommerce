@@ -77,7 +77,7 @@ Os testes apagam os dados das tabelas da aplicação no banco de teste a cada ce
 
 ## Organização
 
-Há um único projeto Maven, com os pacotes organizados por funcionalidade. Não existem serviços independentes para iniciar. O detalhamento da estrutura e das responsabilidades está em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
+Há um único projeto Maven, com os pacotes organizados por funcionalidade e separados em controllers, services, repositories e DTOs. As rotas são declaradas nos controllers; regras e transações ficam nos services, e o SQL fica nos repositories. Não existem serviços independentes para iniciar. O detalhamento da estrutura e das responsabilidades está em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 - `auth`: autenticação, perfil, senha, cargos e bootstrap do administrador.
 - `catalog`: produtos, imagens por URL HTTPS, categorias e empresas.

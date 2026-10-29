@@ -8,10 +8,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Component
 public class CurrentAccount {
-  private final Database db;
+  private final AccountRepository repository;
 
-  public CurrentAccount(Database db) {
-    this.db = db;
+  public CurrentAccount(AccountRepository repository) {
+    this.repository = repository;
   }
 
   public record Account(long id, String name, String email, String role, Long companyId) {
@@ -24,14 +24,13 @@ public class CurrentAccount {
     var auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser"))
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-    var r =
-        db.one("SELECT id,name,email,role,company_id FROM account WHERE email=?", auth.getName());
+    var r = repository.findCurrentByEmail(auth.getName());
     return new Account(
-        db.id(r, "id"),
+        Database.id(r, "id"),
         (String) r.get("name"),
         (String) r.get("email"),
         (String) r.get("role"),
-        r.get("company_id") == null ? null : db.id(r, "company_id"));
+        r.get("company_id") == null ? null : Database.id(r, "company_id"));
   }
 
   public void admin() {

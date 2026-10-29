@@ -35,20 +35,43 @@ A aplicação é um monólito modular: um processo Spring Boot, um banco e um pr
 
 ## Responsabilidades
 
-| Local | Responsabilidade |
+O fluxo de uma requisição é `Controller → Service → Repository → Database`.
+Os pacotes continuam organizados por funcionalidade (`auth`, `catalog` e `commerce`),
+com as camadas identificadas pelo sufixo das classes dentro de cada pacote.
+
+| Camada | Responsabilidade |
 | --- | --- |
-| `auth/SecurityConfig` | Configurar login, logout, sessão, CSRF e acesso inicial às rotas |
-| `auth/CurrentAccount` | Obter a identidade e validar cargo e empresa a partir do banco |
-| `auth/AccountController` | Cadastro, perfil, troca de senha e administração de membros |
-| `auth/AdminBootstrap` | Criar o primeiro administrador mediante configuração explícita |
-| `catalog/CatalogController` | Consultar e administrar empresas, categorias e produtos; inclui estoque e imagem |
-| `commerce/CommerceController` | Endereços, carrinho, entrada do checkout e consulta de pedidos |
-| `commerce/CheckoutService` | Coordenar a transação de compra, bloqueios de estoque, cupom, pedido e idempotência |
-| `commerce/OperationsController` | Administração de cupons, confirmação de pagamento, entrega e consulta de vendas |
-| `shared/Database` | Executar consultas parametrizadas e tratar recurso ausente |
+| `*Controller` | Declarar rotas com `@RequestMapping`, validar entradas com `@Valid`, receber parâmetros e definir status HTTP |
+| `*Service` | Executar casos de uso, aplicar autorização e regras de negócio e delimitar transações com `@Transactional` |
+| `*Repository` | Encapsular SQL parametrizado, consultas, gravações e bloqueios de linhas |
+| `*Dtos` | Definir os records de entrada, suas validações e enums, sem dependência dos controllers |
+| `shared/Database` | Adaptar o `JdbcClient`, executar SQL parametrizado e tratar recurso ausente |
 | `shared/Errors` | Traduzir validação e conflitos para respostas HTTP controladas |
 
-O fluxo de compra passa por `CommerceController → CheckoutService → Database`. As consultas e operações de cadastro mais simples usam `Database` diretamente nos controllers. A aplicação ainda não separa todos os casos de uso em serviços ou repositórios por domínio; essa é uma possibilidade de refatoração, não uma camada já existente.
+`AccountService` cuida do cadastro, perfil, senha e membros; `CatalogService`, dos
+produtos, categorias e empresas; `CommerceService`, dos endereços, carrinho e consulta
+de pedidos; `OperationsService`, dos cupons, vendas, pagamentos e entregas.
+`CheckoutService` coordena a compra atômica por meio de `CheckoutRepository`.
+Os repositories têm métodos nomeados e parâmetros tipados para cada operação.
+
+No Spring MVC, os próprios controllers declaram as rotas; o contrato completo está
+em [API.md](API.md). `SecurityConfig` configura login, logout, CSRF e acesso inicial
+às rotas. A invalidação da sessão após trocar a senha permanece no controller,
+após o retorno da transação do service.
+
+`CurrentAccount` resolve a identidade autenticada e verifica permissões de cargo e
+empresa. Ele, `SecurityConfig` e `AdminBootstrap` consultam `AccountRepository`,
+que concentra a persistência de contas.
+
+As transações que antes estavam nos controllers estão nos services. O checkout
+mantém o bloqueio da conta para serializar alterações de carrinho/endereço e
+retentativas, os bloqueios dos produtos em ordem de ID e o bloqueio do cupom.
+O SQL continua usando JDBC e retornando mapas; a refatoração preserva o esquema,
+as URLs e os formatos JSON usados pela interface.
+
+`LayerArchitectureTest` verifica que os controllers dependem de services, que as
+transações não ficam nos controllers e que os services não recebem DTOs aninhados
+em controllers nem injetam o acesso genérico ao banco.
 
 ## Por que os diretórios antigos foram removidos
 

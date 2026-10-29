@@ -29,7 +29,7 @@ public class Database {
     return jdbc.sql(sql).params(Arrays.asList(params)).update();
   }
 
-  public long id(Map<String, Object> row, String key) {
+  public static long id(Map<String, Object> row, String key) {
     return ((Number) row.get(key)).longValue();
   }
 }

@@ -1,6 +1,5 @@
 package com.guilherme.ecommerce.auth;
 
-import com.guilherme.ecommerce.shared.Database;
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -17,12 +16,9 @@ public class SecurityConfig {
   }
 
   @Bean
-  UserDetailsService users(Database db) {
+  UserDetailsService users(AccountRepository repository) {
     return email -> {
-      var rows =
-          db.list(
-              "SELECT email,password_hash,role FROM account WHERE email=?",
-              email.trim().toLowerCase(java.util.Locale.ROOT));
+      var rows = repository.findCredentialsByEmail(email.trim().toLowerCase(java.util.Locale.ROOT));
       if (rows.isEmpty()) throw new UsernameNotFoundException("Credenciais inválidas");
       var r = rows.getFirst();
       return User.withUsername((String) r.get("email"))
