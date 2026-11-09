@@ -1,91 +1,117 @@
-# E-commerce em Spring
+# Arôme — E-commerce full-stack
 
-Recriação do projeto E-commerce-Node.js em Java 21 e Spring Boot 3.5.11. A aplicação inclui catálogo, contas, empresas, categorias, carrinho, endereços, cupons, pedidos, registro de pagamento e acompanhamento de entrega. A interface está em português e é servida pela própria aplicação.
+Monólito modular com **Java 21, Spring Boot 3.5.11, Spring Security, Spring Data JPA/Hibernate, PostgreSQL e Flyway**, com frontend separado em **Angular 22, TypeScript estrito e Angular Material**.
 
-O código executável fica em `src/` e o `pom.xml` da raiz é a entrada do projeto. Os antigos esqueletos `order-service`, `inventory-service` e `payment-service` foram removidos porque não tinham regras de negócio e não participavam da aplicação. Esta implementação usa uma aplicação modular e uma transação de banco para checkout; não depende de Kafka.
+Inclui catálogo e filtros, detalhes de produtos, cadastro/login, perfil/senha, endereços, carrinho, checkout idempotente, cupons, pedidos, pagamento manual, entrega e gestão de empresas, produtos, categorias, membros e vendas. O frontend legado foi substituído após validação E2E; o Spring serve somente a API.
 
-As mudanças e diferenças em relação ao Node estão em [README-MIGRACAO.md](README-MIGRACAO.md). O contrato das rotas está em [docs/API.md](docs/API.md).
-
-## Executar localmente
-
-Requisitos: JDK 21 ou superior e Maven, ou o wrapper incluído. O primeiro build precisa de internet para baixar as dependências.
-
-```bash
-export BOOTSTRAP_ADMIN_EMAIL='admin@example.com'
-export BOOTSTRAP_ADMIN_PASSWORD='uma-senha-forte-de-12-ou-mais-caracteres'
-./mvnw spring-boot:run
-```
-
-Abra http://localhost:8080. O banco H2 é persistido em `data/`; o Flyway cria as tabelas. Sem as variáveis de bootstrap, a aplicação inicia, mas não cria administrador. Não há senha padrão. O bootstrap cria um administrador somente se ainda não existir nenhum; não promove uma conta existente nem redefine senhas.
-
-Entre com o administrador e use **Gestão** para criar uma empresa e categoria e, depois, um produto. Os IDs das empresas e categorias podem ser consultados em `/api/companies` e `/api/categories`. Uma conta criada na tela de cadastro sempre recebe o cargo `CUSTOMER`. O administrador pode atribuir `OWNER` ou `SELLER` e uma empresa pelo painel. Para criar produtos como administrador, informe a empresa desejada; vendedores e donos só podem operar na própria empresa.
-
-O fluxo de compra é: criar conta → entrar → adicionar endereço em Minha conta → adicionar produtos ao carrinho → criar pedido → consultar Pedidos. A confirmação manual do pagamento e a atualização da entrega ficam em Gestão para o administrador.
-
-## Executar com Docker e PostgreSQL
+## Executar com Docker
 
 ```bash
 cp .env.example .env
-# Edite .env com suas próprias senhas e e-mail.
+# Edite as senhas e o e-mail; não há credenciais padrão na aplicação.
 docker compose up --build
 ```
 
-Acesse http://localhost:8080. O PostgreSQL fica na rede interna do Compose e persiste no volume `postgres_data`. `docker compose down` encerra os serviços e preserva os dados. Para usar PostgreSQL sem Compose, defina `DB_URL=jdbc:postgresql://localhost:5432/ecommerce`, `DB_USER` e `DB_PASSWORD` antes de executar o Maven.
+Abra **http://localhost:8080**. O Nginx serve o Angular e encaminha `/api` ao backend. Apenas o frontend publica porta; banco e backend ficam na rede interna. `HTTP_PORT` altera a porta local. O volume `postgres_data` preserva os dados; `docker compose down` encerra os containers sem apagar o banco.
 
-Em hospedagem com HTTPS, use `COOKIE_SECURE=true`. O padrão `false` permite testar em HTTP local. A aplicação usa sessão no servidor, cookie HttpOnly/SameSite e CSRF. A interface obtém o token CSRF antes das mutações e o renova após login/logout.
+O bootstrap cria o primeiro administrador somente quando não existe ADMIN. Não promove uma conta existente nem redefine sua senha. Na gestão, crie empresa, categoria e produto. Cadastros públicos sempre criam CUSTOMER; a atribuição de SELLER/OWNER e empresa exige administrador.
 
-## Interface Arôme
+Em produção, publique por HTTPS e configure `COOKIE_SECURE=true`. O perfil `prod` exige `DB_URL`, `DB_USER` e `DB_PASSWORD`, mantém `ddl-auto=validate` e tem cookies Secure por padrão. O Compose usa HTTP local e permite a configuração explícita de `COOKIE_SECURE=false`.
 
-O visual retoma a identidade do projeto original: cabeçalho roxo, detalhes em rosa, fonte Lexend, menu lateral e login com abas sobre o fundo original. Há tema claro/escuro e layouts adaptados para celular.
+## Desenvolvimento
 
-- Início e filtros: `http://localhost:8080/#catalog`.
-- Login/cadastro ou perfil da conta conectada: `http://localhost:8080/#account`.
-- Carrinho e pedidos: `/#cart` e `/#orders`.
-- Gestão: Menu → Gestão (`/#manage`), conforme o cargo e a empresa da conta.
+Backend: JDK **21** e Maven (ou wrapper). PostgreSQL é o banco principal; H2 é uma alternativa local e de teste.
 
-A gestão usa tabelas e formulários para empresas, produtos, categorias, equipe, cupons e vendas. Os campos apresentam nomes de lojas e categorias em vez de exigir seus IDs. Os pedidos mostram endereço, itens e acompanhamento em português. Fontes, ícones e imagens de fundo são locais; imagens de produtos por URL continuam dependendo do endereço informado.
+```bash
+export DB_URL='jdbc:postgresql://localhost:5432/ecommerce'
+export DB_USER='ecommerce'
+export DB_PASSWORD='sua-senha'
+# Bootstrap opcional, sem conta administrativa automática quando omitido:
+export BOOTSTRAP_ADMIN_EMAIL='admin@example.com'
+export BOOTSTRAP_ADMIN_PASSWORD='sua-senha-forte'
+./mvnw spring-boot:run
+```
 
-Para aplicar alterações visuais quando a aplicação está no Docker, execute `docker compose up --build --no-deps -d app` e atualize a página. Esse comando reconstrói somente a aplicação e preserva o banco; é necessário entrar novamente se havia uma sessão aberta.
+Sem `DB_URL`, o perfil padrão usa H2 em `data/`. O backend atende em `http://localhost:8080/api`; sua raiz não contém uma interface.
 
-## Dados fictícios para testes
+Frontend: Node **24.15+** (ou outra versão compatível com Angular 22), npm e Angular CLI instalado pelo projeto.
 
-Com o PostgreSQL do Docker Compose em execução:
+```bash
+cd frontend
+npm ci
+npm start
+```
+
+Abra **http://localhost:4200**. O proxy em `frontend/proxy.conf.json` encaminha `/api` ao backend em 8080. Sessão, cookies e CSRF continuam na mesma origem; CORS não é necessário. A configuração pública em `frontend/public/config.js` define a base da API; no container, `API_URL` é aplicada na inicialização. Use um caminho da mesma origem e ajuste o proxy/Nginx se alterar `/api`.
+
+```bash
+# Build de produção do frontend:
+npm run build
+# Backend empacotado, executando a partir da raiz:
+./mvnw package
+java -jar target/ecommerce-1.0.0.jar
+```
+
+O build Angular produz `frontend/dist/storefront/browser`. Cada aplicação tem seu próprio Dockerfile e ciclo de build; o projeto Maven da raiz contém exclusivamente o backend. Não é necessário mover o Maven para outro diretório para separá-lo do Angular.
+
+## Testes
+
+```bash
+./mvnw verify
+cd frontend
+npm ci
+npm test
+npm run build
+```
+
+Sem `TEST_POSTGRES_URL`, os testes PostgreSQL são ignorados. Para a suíte completa, use **um banco PostgreSQL exclusivo e descartável**, pois os testes limpam suas tabelas a cada cenário:
+
+```bash
+TEST_POSTGRES_URL='jdbc:postgresql://localhost:5432/ecommerce_test' \
+TEST_POSTGRES_USER='ecommerce' TEST_POSTGRES_PASSWORD='senha-de-teste' \
+./mvnw verify
+```
+
+Os cenários verificam contratos HTTP, BCrypt/UTF-8, CSRF/sessão, autorização atual no banco, IDOR, empresa, validação, estados, snapshots históricos, rollback, estoque/cupom concorrentes, idempotência simultânea e número de consultas no carrinho. Os testes arquiteturais verificam contratos tipados, ausência de JDBC na produção, isolamento das camadas e dependências acíclicas entre funcionalidades. JDBC permanece apenas nos fixtures/assertivas independentes de integração.
+
+Para E2E, inicie **outro ambiente exclusivo de teste**, com um administrador e as credenciais correspondentes. Os testes criam contas, empresas, produtos, cupons e pedidos fictícios; não os aponte para produção.
+
+```bash
+cd frontend
+npx playwright install chromium
+export PLAYWRIGHT_BASE_URL='http://127.0.0.1:8080'
+export E2E_ADMIN_EMAIL='seu-admin-de-teste@example.test'
+export E2E_ADMIN_PASSWORD='senha-do-admin-de-teste'
+npm run e2e
+```
+
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` permite usar um Chromium já instalado. O CI executa H2/PostgreSQL, testes/build Angular e E2E em Docker. A configuração de CI foi atualizada; sua execução remota não é presumida a partir dos testes locais.
+
+## Variáveis
+
+| Variável | Uso |
+| --- | --- |
+| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Conexão JDBC usada pelo datasource JPA/Flyway |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Bootstrap opcional do primeiro administrador |
+| `SPRING_PROFILES_ACTIVE=prod` | PostgreSQL por ambiente e cookies Secure por padrão |
+| `COOKIE_SECURE` | `true` com HTTPS; `false` somente em HTTP local |
+| `HTTP_PORT` | Porta local do Nginx no Compose, padrão 8080 |
+| `API_URL` | Base pública de API do container frontend, padrão `/api` |
+| `TEST_POSTGRES_*` | Banco exclusivo da suíte de integração |
+| `PLAYWRIGHT_BASE_URL`, `E2E_ADMIN_*` | Ambiente e administrador exclusivos de E2E |
+
+## Documentação e limites
+
+- [Arquitetura e limites transacionais](docs/ARQUITETURA.md).
+- [Contratos REST](docs/API.md).
+- [Diagnóstico, plano e execução da refatoração](docs/REFACTOR_PLAN.md).
+- [Relatório final e evidências de validação](docs/REFACTOR_REPORT.md).
+- [Histórico da migração Node → Spring](README-MIGRACAO.md).
+
+O script opcional `scripts/seed-demo.sql` adiciona lojas/categorias/produtos sem criar usuários ou pedidos:
 
 ```bash
 docker compose exec -T db psql -U ecommerce -d ecommerce -v ON_ERROR_STOP=1 < scripts/seed-demo.sql
 ```
 
-O script adiciona três lojas de demonstração, cinco categorias e quinze produtos. Inclui produto sem estoque, última unidade e produto inativo para testar esses cenários. Pode ser reexecutado sem duplicar os registros nem redefinir estoque, preços ou edições existentes. Não cria usuários ou pedidos e não é executado automaticamente ao iniciar a aplicação.
-
-## Testes e build
-
-```bash
-./mvnw verify
-java -jar target/ecommerce-1.0.0.jar
-```
-
-A suíte cobre autenticação, CSRF, exposição de campos, elevação de privilégios, isolamento por empresa e usuário, consultas parametrizadas, limites de paginação, validação, cupons, rollback, idempotência e concorrência no estoque. Para repetir os mesmos cenários em um **banco PostgreSQL exclusivo para testes**:
-
-```bash
-export TEST_POSTGRES_URL='jdbc:postgresql://localhost:5432/ecommerce_test'
-export TEST_POSTGRES_USER='ecommerce'
-export TEST_POSTGRES_PASSWORD='sua-senha-de-teste'
-./mvnw test -Dtest=PostgresIntegrationTest
-```
-
-Os testes apagam os dados das tabelas da aplicação no banco de teste a cada cenário. Sem `TEST_POSTGRES_URL`, a suíte PostgreSQL é ignorada. O workflow em `.github/workflows/verify.yml` executa H2 e PostgreSQL com Java 21.
-
-## Organização
-
-Há um único projeto Maven, com os pacotes organizados por funcionalidade e separados em controllers, services, repositories e DTOs. As rotas são declaradas nos controllers; regras e transações ficam nos services, e o SQL fica nos repositories. Não existem serviços independentes para iniciar. O detalhamento da estrutura e das responsabilidades está em [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
-
-- `auth`: autenticação, perfil, senha, cargos e bootstrap do administrador.
-- `catalog`: produtos, imagens por URL HTTPS, categorias e empresas.
-- `commerce`: endereços, carrinho, checkout, cupons, pedidos, pagamentos e entregas.
-- `shared`: acesso parametrizado ao banco e tradução de erros HTTP.
-- `src/main/resources/db/migration`: evolução versionada do esquema.
-- `src/main/resources/static`: interface sem dependências de Node.
-
-As consultas privadas usam o ID da conta autenticada; a API não recebe `pessoaId` ou `carrinhoId` para escolher de quem comprar. O preço vem do banco, os valores usam `BigDecimal`, e os dados do produto e endereço são copiados para o pedido para preservar seu histórico.
-
-Pagamento é um registro administrativo, sem cobrança real nem armazenamento de cartão. Frete, integração com transportadora, envio de e-mail e importação do banco MySQL antigo não estão conectados. Veja as decisões e limites no documento da migração.
+Pagamento continua sendo confirmação administrativa, sem gateway ou dados de cartão. Não há cálculo de frete, recuperação por e-mail, expiração/cancelamento de pedidos, reembolso ou reposição automática do estoque de pedidos não pagos. Sessões são locais à instância e a troca de senha encerra a sessão atual; revogação global e operação com várias réplicas exigem trabalho adicional.

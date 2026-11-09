@@ -1,0 +1,41 @@
+<div class="section-title">
+  <div>
+    <h2>Cupons</h2>
+    <p class="muted">Um incentivo a mais para o próximo achado.</p>
+  </div>
+  <button mat-flat-button (click)="create()">Novo cupom</button>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Desconto</th>
+        <th>Validade</th>
+        <th>Usos</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (coupon of coupons(); track coupon.id) {
+        <tr>
+          <td>{{ coupon.code }}</td>
+          <td>{{ coupon.percentage }}%</td>
+          <td>{{ coupon.expires_on | date: "mediumDate" }}</td>
+          <td>{{ coupon.used }} de {{ coupon.usage_limit }}</td>
+          <td>{{ coupon.active ? "Ativo" : "Inativo" }}</td>
+          <td>
+            @if (coupon.active) {
+              <button mat-button (click)="disable(coupon)">Desativar</button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="6">Nenhum cupom cadastrado.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

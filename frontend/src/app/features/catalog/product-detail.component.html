@@ -1,0 +1,30 @@
+<a mat-button routerLink="/catalog">← Voltar ao catálogo</a>
+@if (product(); as p) {
+  <article class="detail-layout">
+    <div class="product-visual detail-image">
+      @if (p.image_url) {
+        <img [src]="p.image_url" [alt]="p.name" referrerpolicy="no-referrer" />
+      } @else {
+        <span class="placeholder">a.</span>
+      }
+    </div>
+    <div>
+      <p class="eyebrow">UM NOVO ACHADO</p>
+      <h1>{{ p.name }}</h1>
+      <p class="long-description">{{ p.description }}</p>
+      <p class="price">{{ p.price | currency: "BRL" }}</p>
+      <p>{{ p.stock }} unidades disponíveis</p>
+      <button
+        mat-flat-button
+        [disabled]="p.stock === 0 || saving()"
+        (click)="add(p)"
+      >
+        Adicionar ao carrinho
+      </button>
+    </div>
+  </article>
+} @else {
+  <p role="status">
+    {{ failed() ? "Produto indisponível." : "Carregando produto…" }}
+  </p>
+}

@@ -1,0 +1,48 @@
+<h2>Pagamento e entrega</h2>
+<p class="muted">
+  Confirme apenas pagamentos verificados. O fluxo de entrega é Pago → Enviado →
+  Entregue.
+</p>
+<mat-card
+  ><mat-card-content
+    ><form [formGroup]="form" (ngSubmit)="submit()">
+      <mat-form-field
+        ><mat-label>Número do pedido</mat-label
+        ><input
+          matInput
+          type="number"
+          formControlName="id"
+          min="1"
+          step="1"
+        /><mat-error>Informe o número do pedido.</mat-error></mat-form-field
+      ><mat-form-field
+        ><mat-label>Operação</mat-label
+        ><mat-select formControlName="operation" (selectionChange)="validate()"
+          ><mat-option value="PAY">Confirmar pagamento</mat-option
+          ><mat-option value="SHIPPED">Registrar envio</mat-option
+          ><mat-option value="DELIVERED"
+            >Confirmar entrega</mat-option
+          ></mat-select
+        ></mat-form-field
+      >
+      @if (form.controls.operation.value !== "PAY") {
+        <mat-form-field
+          ><mat-label>Transportadora</mat-label
+          ><input
+            matInput
+            formControlName="carrier"
+            maxlength="120"
+          /><mat-error>Informe a transportadora.</mat-error></mat-form-field
+        ><mat-form-field
+          ><mat-label>Código de rastreamento</mat-label
+          ><input
+            matInput
+            formControlName="trackingCode"
+            maxlength="120"
+          /><mat-error>Informe o rastreamento.</mat-error></mat-form-field
+        >
+      }
+      <button mat-flat-button>Continuar</button>
+    </form></mat-card-content
+  ></mat-card
+>

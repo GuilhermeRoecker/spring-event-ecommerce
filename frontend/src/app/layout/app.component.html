@@ -1,0 +1,57 @@
+<a class="skip" href="#main">Ir para o conteúdo</a>
+<header>
+  <mat-toolbar
+    ><a class="brand" routerLink="/catalog" aria-label="Arôme início"
+      >Arôme<span>.</span></a
+    ><span class="spacer"></span
+    ><span class="greeting">{{
+      auth.user()
+        ? "Olá, " + auth.user()!.name.split(" ")[0]
+        : "Seu próximo achado está aqui"
+    }}</span
+    ><button mat-button (click)="drawer.toggle()" aria-label="Abrir menu">
+      Menu
+    </button></mat-toolbar
+  >
+  <nav class="top-nav" aria-label="Principal">
+    <a mat-button routerLink="/catalog" routerLinkActive="active">Explorar</a
+    ><a mat-button routerLink="/cart" routerLinkActive="active">Carrinho</a
+    ><a mat-button routerLink="/orders" routerLinkActive="active">Pedidos</a
+    ><a
+      mat-button
+      [routerLink]="auth.user() ? '/account' : '/login'"
+      routerLinkActive="active"
+      >{{ auth.user() ? "Minha conta" : "Entrar" }}</a
+    >
+    @if (auth.user() && auth.user()!.role !== "CUSTOMER") {
+      <a mat-button routerLink="/admin" routerLinkActive="active">Gestão</a>
+    }
+  </nav>
+</header>
+@if (feedback.pending() > 0) {
+  <mat-progress-bar mode="indeterminate" aria-label="Carregando" />
+}
+<mat-drawer-container
+  ><mat-drawer #drawer mode="over" position="end"
+    ><nav class="drawer" aria-label="Menu">
+      <h2>Seu espaço</h2>
+      <a mat-button routerLink="/catalog" (click)="drawer.close()">Catálogo</a
+      ><a mat-button routerLink="/account" (click)="drawer.close()"
+        >Minha conta</a
+      ><a mat-button routerLink="/orders" (click)="drawer.close()">Pedidos</a
+      ><button mat-button (click)="toggleTheme()">
+        {{ dark() ? "Tema claro" : "Tema escuro" }}
+      </button>
+      @if (auth.user()) {
+        <button mat-button (click)="logout(); drawer.close()">Sair</button>
+      }
+      <button mat-button (click)="drawer.close()">Fechar menu</button>
+    </nav></mat-drawer
+  ><mat-drawer-content
+    ><main id="main" tabindex="-1"><router-outlet /></main>
+    <footer>
+      <a class="brand" routerLink="/catalog">Arôme<span>.</span></a>
+      <p>Pequenas escolhas. Novas possibilidades.</p>
+    </footer></mat-drawer-content
+  ></mat-drawer-container
+>

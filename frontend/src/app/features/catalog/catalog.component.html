@@ -1,0 +1,95 @@
+<section class="hero">
+  <p class="eyebrow">ESCOLHAS PARA O SEU DIA</p>
+  <h1>Pequenos achados.<br /><em>Novas possibilidades.</em></h1>
+  <p>Encontre algo que combina com você nas nossas lojas.</p>
+  <span class="hero-mark" aria-hidden="true">a.</span>
+</section>
+<form class="filters" [formGroup]="filters" (ngSubmit)="load(0)">
+  <mat-form-field
+    ><mat-label>Buscar produtos</mat-label
+    ><input
+      matInput
+      formControlName="search"
+      maxlength="100"
+      placeholder="O que você está procurando?" /></mat-form-field
+  ><mat-form-field
+    ><mat-label>Categoria</mat-label
+    ><mat-select formControlName="categoryId"
+      ><mat-option value="">Todas as categorias</mat-option>
+      @for (category of categories(); track category.id) {
+        <mat-option [value]="category.id">{{ category.name }}</mat-option>
+      }
+    </mat-select></mat-form-field
+  ><mat-form-field
+    ><mat-label>Loja</mat-label
+    ><mat-select formControlName="companyId"
+      ><mat-option value="">Todas as lojas</mat-option>
+      @for (company of companies(); track company.id) {
+        <mat-option [value]="company.id">{{ company.name }}</mat-option>
+      }
+    </mat-select></mat-form-field
+  ><button mat-flat-button type="submit">Buscar</button>
+</form>
+<div class="section-title">
+  <h2>Explore o catálogo</h2>
+  <span>{{ products().length }} produtos nesta página</span>
+</div>
+<div class="product-grid">
+  @for (product of products(); track product.id) {
+    <mat-card class="product"
+      ><a class="product-visual" [routerLink]="['/products', product.id]">
+        @if (product.image_url) {
+          <img
+            [src]="product.image_url"
+            [alt]="product.name"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            (error)="imageFallback($event)"
+          />
+        } @else {
+          <span class="placeholder" aria-hidden="true">a.</span>
+        }
+        @if (product.stock === 0) {
+          <span class="stock-badge">Sem estoque</span>
+        } @else if (product.stock === 1) {
+          <span class="stock-badge">Última unidade</span>
+        }</a
+      ><mat-card-content
+        ><p class="eyebrow">{{ companyName(product.company_id) }}</p>
+        <a class="product-name" [routerLink]="['/products', product.id]">{{
+          product.name
+        }}</a>
+        <p class="description">{{ product.description }}</p>
+        <strong class="price">{{ product.price | currency: "BRL" }}</strong>
+        <p class="muted">
+          {{ product.stock }} unidades disponíveis
+        </p></mat-card-content
+      ><mat-card-actions
+        ><button
+          mat-flat-button
+          [disabled]="product.stock === 0 || adding() === product.id"
+          (click)="add(product)"
+        >
+          Adicionar ao carrinho</button
+        ><a
+          mat-button
+          [routerLink]="['/products', product.id]"
+          [attr.aria-label]="'Detalhes de ' + product.name"
+          >Detalhes</a
+        ></mat-card-actions
+      ></mat-card
+    >
+  } @empty {
+    <div class="empty">
+      <h2>
+        {{ loaded() ? "Nenhum produto encontrado" : "Carregando produtos…" }}
+      </h2>
+      <p>Experimente outro termo, categoria ou loja.</p>
+    </div>
+  }
+</div>
+<app-pager
+  [page]="page()"
+  [hasNext]="products().length === 20"
+  (change)="load($event)"
+/>

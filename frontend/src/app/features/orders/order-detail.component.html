@@ -1,0 +1,61 @@
+<a mat-button routerLink="/orders">← Meus pedidos</a>
+@if (detail(); as d) {
+  <div class="section-title">
+    <h1>Pedido #{{ d.order.id }}</h1>
+    <app-status [value]="d.order.status" />
+  </div>
+  <p>{{ d.order.created_at | date: "medium" }}</p>
+  <div class="table-wrap">
+    <table>
+      <caption>
+        Itens do pedido
+      </caption>
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Quantidade</th>
+          <th>Preço unitário</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of d.items; track item.product_id) {
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price | currency: "BRL" }}</td>
+            <td>{{ item.quantity * item.unit_price | currency: "BRL" }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="two-columns">
+    <mat-card
+      ><mat-card-content
+        ><h2>Entrega</h2>
+        <p>{{ d.order.shipping_address }}</p>
+        <app-status [value]="d.delivery.status" />
+        <p>{{ d.delivery.carrier }}</p>
+        @if (d.delivery.tracking_code) {
+          <p>Rastreamento: {{ d.delivery.tracking_code }}</p>
+        }
+      </mat-card-content></mat-card
+    ><mat-card
+      ><mat-card-content
+        ><h2>Pagamento</h2>
+        <p>{{ methods[d.payment.method] }}</p>
+        <app-status [value]="d.payment.status" />
+        <p>Subtotal: {{ d.order.subtotal | currency: "BRL" }}</p>
+        <p>Desconto: {{ d.order.discount | currency: "BRL" }}</p>
+        <p class="price">
+          Total: {{ d.order.total | currency: "BRL" }}
+        </p></mat-card-content
+      ></mat-card
+    >
+  </div>
+} @else {
+  <p role="status">
+    {{ failed() ? "Pedido indisponível." : "Carregando pedido…" }}
+  </p>
+}

@@ -1,0 +1,67 @@
+<a mat-button routerLink="/cart">← Voltar ao carrinho</a>
+<p class="eyebrow">FALTA POUCO</p>
+<h1>Finalizar compra</h1>
+<div class="checkout-layout">
+  <mat-card
+    ><mat-card-content
+      ><h2>Entrega e pagamento</h2>
+      @if (loaded() && !addresses().length) {
+        <p>Cadastre um endereço antes de continuar.</p>
+        <a mat-stroked-button routerLink="/account">Cadastrar endereço</a>
+      }
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <mat-form-field
+          ><mat-label>Endereço de entrega</mat-label
+          ><mat-select formControlName="addressId">
+            @for (address of addresses(); track address.id) {
+              <mat-option [value]="address.id"
+                >{{ address.street }}, {{ address.number }} ·
+                {{ address.city }}/{{ address.state }}</mat-option
+              >
+            }</mat-select
+          ><mat-error>Selecione seu endereço.</mat-error></mat-form-field
+        ><mat-form-field
+          ><mat-label>Forma de pagamento</mat-label
+          ><mat-select formControlName="method"
+            ><mat-option value="PIX">Pix</mat-option
+            ><mat-option value="CARD">Cartão</mat-option
+            ><mat-option value="BOLETO">Boleto</mat-option></mat-select
+          ></mat-form-field
+        ><mat-form-field
+          ><mat-label>Cupom de desconto</mat-label
+          ><input matInput formControlName="coupon" maxlength="40"
+        /></mat-form-field>
+        <p class="muted">
+          O pedido aguarda confirmação manual do pagamento. Nenhuma cobrança é
+          feita nesta tela.
+        </p>
+        <button
+          mat-flat-button
+          [disabled]="busy() || !items().length || !addresses().length"
+        >
+          {{ busy() ? "Criando pedido…" : "Criar pedido" }}
+        </button>
+      </form></mat-card-content
+    ></mat-card
+  >
+  <aside>
+    <mat-card
+      ><mat-card-content
+        ><h2>Suas escolhas</h2>
+        @for (item of items(); track item.product_id) {
+          <p>
+            {{ item.quantity }} × {{ item.name }}
+            <strong>{{ item.price * item.quantity | currency: "BRL" }}</strong>
+          </p>
+        }
+        <hr />
+        <p>
+          Subtotal <strong>{{ total() | currency: "BRL" }}</strong>
+        </p>
+        <p class="muted">
+          O desconto será calculado no servidor ao criar o pedido.
+        </p></mat-card-content
+      ></mat-card
+    >
+  </aside>
+</div>

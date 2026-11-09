@@ -1,0 +1,63 @@
+<section class="auth-scene">
+  <mat-card class="auth-card"
+    ><mat-card-content
+      ><p class="eyebrow">SEU ESPAÇO NA ARÔME</p>
+      <h1>{{ register() ? "Crie sua conta" : "Bem-vindo de volta!" }}</h1>
+      <p class="muted">Seu próximo achado começa aqui.</p>
+      <div class="auth-tabs">
+        <button mat-button [class.active]="!register()" (click)="select(false)">
+          Login</button
+        ><button mat-button [class.active]="register()" (click)="select(true)">
+          Cadastro
+        </button>
+      </div>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        @if (register()) {
+          <mat-form-field
+            ><mat-label>Nome completo</mat-label
+            ><input
+              matInput
+              formControlName="name"
+              autocomplete="name"
+              maxlength="160"
+            /><mat-error>Informe seu nome.</mat-error></mat-form-field
+          >
+        }
+        <mat-form-field
+          ><mat-label>E-mail</mat-label
+          ><input
+            matInput
+            formControlName="email"
+            type="email"
+            autocomplete="username"
+            maxlength="254"
+          /><mat-error>Informe um e-mail válido.</mat-error></mat-form-field
+        ><mat-form-field
+          ><mat-label>Senha</mat-label
+          ><input
+            matInput
+            formControlName="password"
+            [type]="visible() ? 'text' : 'password'"
+            [attr.autocomplete]="
+              register() ? 'new-password' : 'current-password'
+            "
+          /><button
+            mat-button
+            matSuffix
+            type="button"
+            (click)="visible.update(toggle)"
+            [attr.aria-label]="visible() ? 'Ocultar senha' : 'Mostrar senha'"
+          >
+            {{ visible() ? "Ocultar" : "Mostrar" }}</button
+          ><mat-error>{{
+            register()
+              ? "Use ao menos 12 caracteres e no máximo 72 bytes."
+              : "Informe sua senha."
+          }}</mat-error></mat-form-field
+        ><button mat-flat-button [disabled]="busy()">
+          {{ register() ? "Criar conta" : "Entrar" }}
+        </button>
+      </form></mat-card-content
+    ></mat-card
+  >
+</section>

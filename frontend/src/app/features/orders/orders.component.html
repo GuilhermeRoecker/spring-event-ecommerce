@@ -1,0 +1,28 @@
+<p class="eyebrow">CADA ACHADO, UMA HISTÓRIA</p>
+<h1>Meus pedidos</h1>
+<div class="orders-grid">
+  @for (order of orders(); track order.id) {
+    <mat-card
+      ><mat-card-content
+        ><h2>Pedido #{{ order.id }}</h2>
+        <p>{{ order.created_at | date: "medium" }}</p>
+        <p class="price">{{ order.total | currency: "BRL" }}</p>
+        <app-status [value]="order.status" /></mat-card-content
+      ><mat-card-actions
+        ><a mat-stroked-button [routerLink]="['/orders', order.id]"
+          >Ver detalhes</a
+        ></mat-card-actions
+      ></mat-card
+    >
+  } @empty {
+    <div class="empty">
+      <h2>Seus achados vão aparecer aqui</h2>
+      <a mat-flat-button routerLink="/catalog">Explorar produtos</a>
+    </div>
+  }
+</div>
+<app-pager
+  [page]="page()"
+  [hasNext]="orders().length === 50"
+  (change)="load($event)"
+/>

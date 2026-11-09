@@ -1,5 +1,9 @@
 # Migração do Node/Express para Spring
 
+> Documento histórico da migração anterior. A implementação atual usa JPA e
+> Angular separados; estrutura, execução e resultados atuais estão no README e
+> em docs/REFACTOR_REPORT.md. As validações registradas abaixo pertencem àquela etapa.
+
 ## Fonte e decisões
 Foram examinados o servidor Express, as rotas, os middlewares, os controllers, os modelos, os scripts do navegador, os jobs e a estrutura do dump SQL do repositorio `E-commerce-Node.js`.
 

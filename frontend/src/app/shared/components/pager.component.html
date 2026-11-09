@@ -1,0 +1,16 @@
+<nav class="pager" aria-label="Paginação">
+  <button
+    mat-stroked-button
+    [disabled]="page() === 0"
+    (click)="change.emit(page() - 1)"
+  >
+    Anterior</button
+  ><span>Página {{ page() + 1 }}</span
+  ><button
+    mat-stroked-button
+    [disabled]="!hasNext()"
+    (click)="change.emit(page() + 1)"
+  >
+    Próxima
+  </button>
+</nav>

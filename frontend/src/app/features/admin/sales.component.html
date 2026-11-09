@@ -1,0 +1,45 @@
+<h2>Vendas da loja</h2>
+<p class="muted">Itens da empresa, com privacidade dos compradores.</p>
+<mat-form-field
+  ><mat-label>Loja da gestão</mat-label
+  ><mat-select [formControl]="company" (selectionChange)="load(0)">
+    @for (c of companies(); track c.id) {
+      <mat-option [value]="c.id">{{ c.name }}</mat-option>
+    }
+  </mat-select></mat-form-field
+>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Pedido</th>
+        <th>Produto</th>
+        <th>Quantidade</th>
+        <th>Preço unitário</th>
+        <th>Data</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (sale of sales(); track $index) {
+        <tr>
+          <td>#{{ sale.order_id }}</td>
+          <td>{{ sale.name }}</td>
+          <td>{{ sale.quantity }}</td>
+          <td>{{ sale.unit_price | currency: "BRL" }}</td>
+          <td>{{ sale.created_at | date: "short" }}</td>
+          <td><app-status [value]="sale.status" /></td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="6">Nenhuma venda nesta página.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<app-pager
+  [page]="page()"
+  [hasNext]="sales().length === 50"
+  (change)="load($event)"
+/>

@@ -11,7 +11,7 @@ Base: `/api`. JSON em UTF-8, valores monetários em reais, IDs inteiros. Campos 
 
 Cadastro: `POST /auth/register`, JSON `{ "name": "Pessoa", "email": "pessoa@example.com", "password": "uma-senha-com-12-caracteres" }`. A senha deve ter 12 a 72 caracteres. O e-mail é normalizado para minúsculas. O cargo é sempre `CUSTOMER`. Retorna 201; duplicidade retorna 409.
 
-A API usa a mesma origem da interface. Não é necessário CORS para executar o projeto. Não use o endpoint de login como JSON.
+A API usa a mesma origem da interface Angular por meio do proxy de desenvolvimento ou do Nginx. Não é necessário CORS. Não use o endpoint de login como JSON. O backend não serve mais os arquivos estáticos antigos; as rotas `/api` permanecem iguais.
 
 ## Contas
 
@@ -60,7 +60,7 @@ Produto (POST/PUT):
 
 `imageUrl` é opcional e deve usar HTTPS. Preço positivo com até duas casas decimais; estoque entre 0 e 1.000.000. Não é permitido transferir produto para outra empresa usando PUT.
 
-As respostas SQL usam nomes em `snake_case` (`company_id`, `image_url`, `created_at` etc.); os DTOs de entrada usam os nomes `camelCase` dos exemplos. Essa convenção também é adotada pela interface.
+Os records de resposta preservam nomes em `snake_case` (`company_id`, `image_url`, `created_at` etc.); os DTOs de entrada usam os nomes `camelCase` dos exemplos. Essa convenção também é adotada pela interface.
 
 ## Endereços e carrinho
 
@@ -118,3 +118,28 @@ Uma chave repetida pela mesma conta retorna o mesmo pedido sem repetir baixa de 
 Todas essas operações exigem ADMIN. O cupom vale até a data de expiração inclusive, usa código exato em maiúsculas, desconto de 1–100%, limite global e um uso por conta. O desconto é arredondado a centavos com `HALF_UP`.
 
 A entrega aceita somente `PAID → SHIPPED → DELIVERED`. Não é permitido pular a confirmação de pagamento ou voltar o estado. A confirmação é administrativa e não executa cobrança em provedor externo.
+
+
+## Compatibilidade após a refatoração JPA/Angular
+
+Todas as rotas, formatos de sucesso e códigos de resposta acima foram mantidos.
+`/me` e a atualização de perfil continuam com `companyId`; a listagem administrativa
+continua com `company_id`. Produtos públicos não passaram a expor campos internos
+ou entidades Hibernate. As respostas agora são records tipados, com nomes JSON
+explícitos; não dependem dos aliases ou tipos JDBC do banco.
+
+Erros de segurança produzidos pelos filtros (401/403) agora retornam
+`application/problem+json`, com `status`, `title` e `detail`, em lugar da página
+de erro do servlet. O erro de credenciais em `/auth/login` mantém
+`{ "error": "Credenciais inválidas" }`. Validação e conflitos continuam usando
+ProblemDetail, sem SQL ou stack traces. A ausência de `Idempotency-Key` produz 400.
+
+O Angular renova a referência ao CSRF após login, logout e troca de senha. O token
+e os cookies não são armazenados em localStorage. Após uma resposta 403, o próximo
+pedido de escrita obtém novo token; a requisição recusada não é repetida sozinha.
+A mesma chave idempotente continua retornando o primeiro pedido, mesmo se o corpo
+for diferente ou o status do pedido já tiver avançado.
+
+Para HTTP local, use COOKIE_SECURE=false. Em HTTPS de produção, use true. Logout
+invalida a sessão e remove JSESSIONID; a troca de senha encerra a sessão atual.
+Nenhum endpoint para cobrança real ou dados de cartão foi acrescentado.

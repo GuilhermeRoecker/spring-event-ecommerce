@@ -1,0 +1,35 @@
+<h2>Equipe e clientes</h2>
+<p class="muted">Gerencie o acesso das contas cadastradas.</p>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Pessoa</th>
+        <th>E-mail</th>
+        <th>Cargo</th>
+        <th>Loja</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (a of members(); track a.id) {
+        <tr>
+          <td>{{ a.name }}</td>
+          <td>{{ a.email }}</td>
+          <td>{{ roles[a.role] }}</td>
+          <td>{{ companyName(a.company_id) }}</td>
+          <td><button mat-button (click)="edit(a)">Alterar acesso</button></td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5">Nenhuma conta nesta página.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+<app-pager
+  [page]="page()"
+  [hasNext]="members().length === 50"
+  (change)="load($event)"
+/>

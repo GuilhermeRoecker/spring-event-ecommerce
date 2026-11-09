@@ -6,8 +6,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.guilherme.ecommerce.commerce.CheckoutService;
-import com.guilherme.ecommerce.commerce.CommerceDtos;
+import com.guilherme.ecommerce.checkout.dto.request.Checkout;
+import com.guilherme.ecommerce.checkout.service.CheckoutService;
+import com.guilherme.ecommerce.order.domain.Method;
 import java.util.*;
 import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
@@ -378,12 +379,10 @@ class EcommerceIntegrationTest {
                               "user" + n + "@test.com", "", List.of()));
                   try {
                     start.await();
-                    checkout.checkout(
-                        new CommerceDtos.Checkout(
-                            (long) n, CommerceDtos.Method.PIX, null),
-                        "concurrent-" + n);
+                    checkout.checkout(new Checkout((long) n, Method.PIX, null), "concurrent-" + n);
                     return true;
-                  } catch (org.springframework.web.server.ResponseStatusException e) {
+                  } catch (com.guilherme.ecommerce.shared.exception.BusinessException
+                      | org.springframework.web.server.ResponseStatusException e) {
                     return false;
                   } finally {
                     SecurityContextHolder.clearContext();
@@ -486,19 +485,310 @@ class EcommerceIntegrationTest {
   }
 
   @Test
-  void storefrontAssetsArePublicWithoutOpeningPrivateRoutes() throws Exception {
+  void publicCatalogDoesNotOpenPrivateRoutes() throws Exception {
     for (String path :
         List.of(
-            "/",
-            "/app.js",
-            "/style.css",
-            "/assets/js/ui.js",
-            "/assets/js/management.js",
-            "/assets/fonts/lexend.css",
-            "/assets/images/bg_blobbubble_3.png")) {
+            "/api/products",
+            "/api/products/1",
+            "/api/categories",
+            "/api/companies",
+            "/api/auth/csrf")) {
       mvc.perform(get(path)).andExpect(status().isOk());
     }
     mvc.perform(get("/api/me")).andExpect(status().isUnauthorized());
     mvc.perform(get("/api/admin/accounts")).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void securityErrorsAreProblemDetailsWithoutInternalInformation() throws Exception {
+    mvc.perform(get("/api/me"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+        .andExpect(jsonPath("$.status").value(401))
+        .andExpect(jsonPath("$.detail").value("Autenticação necessária"));
+    mvc.perform(post("/api/auth/register").contentType("application/json").content("{}"))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+        .andExpect(jsonPath("$.status").value(403));
+  }
+
+  @Test
+  void requiredCheckoutHeaderIsAValidationError() throws Exception {
+    mvc.perform(
+            post("/api/me/checkout")
+                .with(user("user1@test.com"))
+                .with(csrf())
+                .contentType("application/json")
+                .content(request()))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void permissionRevocationTakesEffectInAnExistingLoginSession() throws Exception {
+    var login =
+        mvc.perform(
+                post("/api/auth/login")
+                    .with(csrf())
+                    .param("email", "user4@test.com")
+                    .param("password", "customer-password"))
+            .andExpect(status().isNoContent())
+            .andReturn();
+    var session =
+        (org.springframework.mock.web.MockHttpSession) login.getRequest().getSession(false);
+    mvc.perform(get("/api/admin/accounts").session(session)).andExpect(status().isOk());
+    jdbc.update("UPDATE account SET role='CUSTOMER',company_id=NULL WHERE id=4");
+    mvc.perform(get("/api/admin/accounts").session(session)).andExpect(status().isForbidden());
+  }
+
+  @Test
+  void sellerCannotEditCompanyAndOwnerCannotCrossCompany() throws Exception {
+    String input = "{\"name\":\"Renamed\",\"legalName\":\"Renamed Ltda\"}";
+    mvc.perform(
+            put("/api/companies/1")
+                .with(user("user3@test.com"))
+                .with(csrf())
+                .contentType("application/json")
+                .content(input))
+        .andExpect(status().isForbidden());
+    mvc.perform(
+            put("/api/companies/1")
+                .with(user("user5@test.com"))
+                .with(csrf())
+                .contentType("application/json")
+                .content(input))
+        .andExpect(status().isForbidden());
+    mvc.perform(
+            put("/api/companies/2")
+                .with(user("user5@test.com"))
+                .with(csrf())
+                .contentType("application/json")
+                .content(input))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void checkoutKeepsHistoricalSnapshotsAndRejectsBackwardTransitions() throws Exception {
+    cart(1, 1, 1);
+    mvc.perform(
+            post("/api/me/checkout")
+                .with(user("user1@test.com"))
+                .with(csrf())
+                .header("Idempotency-Key", "snapshot-0001")
+                .contentType("application/json")
+                .content(request()))
+        .andExpect(status().isCreated());
+    long id = jdbc.queryForObject("SELECT id FROM purchase_order", Long.class);
+    jdbc.update("UPDATE product SET name='Changed',price=99.00 WHERE id=1");
+    jdbc.update("UPDATE address SET street='Changed' WHERE id=1");
+    mvc.perform(get("/api/me/orders/" + id).with(user("user1@test.com")))
+        .andExpect(jsonPath("$.items[0].name").value("Livro"))
+        .andExpect(jsonPath("$.items[0].unit_price").value(10.50))
+        .andExpect(jsonPath("$.order.shipping_address").value("Rua A, 10, Orleans, SC, 88870000"));
+    String delivery =
+        "{\"status\":\"DELIVERED\",\"carrier\":\"Correios\",\"trackingCode\":\"TEST\"}";
+    mvc.perform(
+            put("/api/admin/orders/" + id + "/delivery")
+                .with(user("user4@test.com"))
+                .with(csrf())
+                .contentType("application/json")
+                .content(delivery))
+        .andExpect(status().isConflict());
+    assertThat(
+            jdbc.queryForObject("SELECT status FROM delivery WHERE order_id=?", String.class, id))
+        .isEqualTo("PENDING");
+    for (int attempt = 0; attempt < 2; attempt++) {
+      var result =
+          mvc.perform(
+              post("/api/admin/orders/" + id + "/confirm-payment")
+                  .with(user("user4@test.com"))
+                  .with(csrf()));
+      if (attempt == 0) result.andExpect(status().isOk());
+      else result.andExpect(status().isConflict());
+    }
+    mvc.perform(
+            put("/api/admin/orders/" + id + "/delivery")
+                .with(user("user4@test.com"))
+                .with(csrf())
+                .contentType("application/json")
+                .content(delivery))
+        .andExpect(status().isConflict());
+  }
+
+  @Test
+  void failureAfterStockAndCouponUpdatesRollsBackTheWholeTransaction() throws Exception {
+    jdbc.update("UPDATE product SET price=999999999999.99,stock=5 WHERE id=1");
+    jdbc.update(
+        "INSERT INTO coupon(code,percentage,expires_on,usage_limit) VALUES('SAVE',10,DATE"
+            + " '2099-12-31',5)");
+    cart(1, 1, 3);
+    mvc.perform(
+            post("/api/me/checkout")
+                .with(user("user1@test.com"))
+                .with(csrf())
+                .header("Idempotency-Key", "overflow-0001")
+                .contentType("application/json")
+                .content("{\"addressId\":1,\"method\":\"PIX\",\"coupon\":\"SAVE\"}"))
+        .andExpect(status().isConflict());
+    assertThat(jdbc.queryForObject("SELECT stock FROM product WHERE id=1", Integer.class))
+        .isEqualTo(5);
+    assertThat(jdbc.queryForObject("SELECT used FROM coupon WHERE code='SAVE'", Integer.class))
+        .isZero();
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM cart_item", Integer.class)).isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM purchase_order", Integer.class)).isZero();
+  }
+
+  @Test
+  void simultaneousRetriesCreateOneOrderAndConsumeTheCouponOnce() throws Exception {
+    jdbc.update(
+        "INSERT INTO coupon(code,percentage,expires_on,usage_limit) VALUES('SAVE',10,DATE"
+            + " '2099-12-31',10)");
+    cart(1, 1, 2);
+    var start = new CountDownLatch(1);
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var futures = new ArrayList<Future<Long>>();
+      for (int i = 0; i < 2; i++)
+        futures.add(
+            executor.submit(
+                () -> {
+                  SecurityContextHolder.getContext()
+                      .setAuthentication(
+                          new UsernamePasswordAuthenticationToken("user1@test.com", "", List.of()));
+                  try {
+                    start.await();
+                    return checkout
+                        .checkout(new Checkout(1L, Method.PIX, "SAVE"), "same-key-0001")
+                        .id();
+                  } finally {
+                    SecurityContextHolder.clearContext();
+                  }
+                }));
+      start.countDown();
+      assertThat(futures.get(0).get(10, TimeUnit.SECONDS))
+          .isEqualTo(futures.get(1).get(10, TimeUnit.SECONDS));
+    }
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM purchase_order", Integer.class))
+        .isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT stock FROM product WHERE id=1", Integer.class))
+        .isEqualTo(3);
+    assertThat(jdbc.queryForObject("SELECT used FROM coupon WHERE code='SAVE'", Integer.class))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void expiredAndPreviouslyRedeemedCouponsDoNotConsumeStock() throws Exception {
+    jdbc.update(
+        "INSERT INTO coupon(code,percentage,expires_on,usage_limit) VALUES('SAVE',100,DATE"
+            + " '2099-12-31',5)");
+    cart(1, 1, 1);
+    mvc.perform(
+            post("/api/me/checkout")
+                .with(user("user1@test.com"))
+                .with(csrf())
+                .header("Idempotency-Key", "coupon-free-1")
+                .contentType("application/json")
+                .content("{\"addressId\":1,\"method\":\"PIX\",\"coupon\":\"SAVE\"}"))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.total").value(0));
+    cart(1, 1, 1);
+    mvc.perform(
+            post("/api/me/checkout")
+                .with(user("user1@test.com"))
+                .with(csrf())
+                .header("Idempotency-Key", "coupon-free-2")
+                .contentType("application/json")
+                .content("{\"addressId\":1,\"method\":\"PIX\",\"coupon\":\"SAVE\"}"))
+        .andExpect(status().isBadRequest());
+    jdbc.update(
+        "INSERT INTO coupon(code,percentage,expires_on,usage_limit) VALUES('OLD',10,DATE"
+            + " '2000-01-01',5)");
+    mvc.perform(
+            post("/api/me/checkout")
+                .with(user("user1@test.com"))
+                .with(csrf())
+                .header("Idempotency-Key", "coupon-free-3")
+                .contentType("application/json")
+                .content("{\"addressId\":1,\"method\":\"PIX\",\"coupon\":\"OLD\"}"))
+        .andExpect(status().isBadRequest());
+    assertThat(jdbc.queryForObject("SELECT stock FROM product WHERE id=1", Integer.class))
+        .isEqualTo(4);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM purchase_order", Integer.class))
+        .isEqualTo(1);
+  }
+
+  @org.springframework.beans.factory.annotation.Autowired
+  jakarta.persistence.EntityManagerFactory entityManagerFactory;
+
+  @Test
+  void cartQueriesDoNotGrowWithTheNumberOfProducts() throws Exception {
+    for (int id = 10; id < 30; id++) {
+      jdbc.update(
+          "INSERT INTO product(id,company_id,category_id,name,description,price,stock)"
+              + " VALUES(?,1,1,?,'Teste',10.50,5)",
+          id,
+          "Produto " + id);
+      cart(1, id, 1);
+    }
+    var statistics =
+        entityManagerFactory.unwrap(org.hibernate.SessionFactory.class).getStatistics();
+    statistics.setStatisticsEnabled(true);
+    statistics.clear();
+    try {
+      mvc.perform(get("/api/me/cart").with(user("user1@test.com")))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.length()").value(20));
+      assertThat(statistics.getPrepareStatementCount())
+          .as("account lookup and a single product-fetching cart query")
+          .isLessThanOrEqualTo(3);
+    } finally {
+      statistics.setStatisticsEnabled(false);
+    }
+  }
+
+  @Test
+  void concurrentBuyersCannotRedeemTheLastCouponUseTwice() throws Exception {
+    jdbc.update(
+        "INSERT INTO coupon(code,percentage,expires_on,usage_limit) VALUES('LAST',10,DATE"
+            + " '2099-12-31',1)");
+    cart(1, 1, 1);
+    cart(2, 1, 1);
+    var start = new CountDownLatch(1);
+    try (var executor = Executors.newFixedThreadPool(2)) {
+      var futures = new ArrayList<Future<Boolean>>();
+      for (int i = 1; i <= 2; i++) {
+        int account = i;
+        futures.add(
+            executor.submit(
+                () -> {
+                  SecurityContextHolder.getContext()
+                      .setAuthentication(
+                          new UsernamePasswordAuthenticationToken(
+                              "user" + account + "@test.com", "", List.of()));
+                  try {
+                    start.await();
+                    checkout.checkout(
+                        new Checkout((long) account, Method.PIX, "LAST"), "last-coupon-" + account);
+                    return true;
+                  } catch (com.guilherme.ecommerce.shared.exception.BusinessException
+                      | org.springframework.web.server.ResponseStatusException expected) {
+                    return false;
+                  } finally {
+                    SecurityContextHolder.clearContext();
+                  }
+                }));
+      }
+      start.countDown();
+      int successes = 0;
+      for (var future : futures) if (future.get(10, TimeUnit.SECONDS)) successes++;
+      assertThat(successes).isEqualTo(1);
+    }
+    assertThat(jdbc.queryForObject("SELECT used FROM coupon WHERE code='LAST'", Integer.class))
+        .isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT stock FROM product WHERE id=1", Integer.class))
+        .isEqualTo(4);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM coupon_redemption", Integer.class))
+        .isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM purchase_order", Integer.class))
+        .isEqualTo(1);
+    assertThat(jdbc.queryForObject("SELECT count(*) FROM cart_item", Integer.class)).isEqualTo(1);
   }
 }

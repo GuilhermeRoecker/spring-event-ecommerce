@@ -1,0 +1,130 @@
+<p class="eyebrow">DO SEU JEITO</p>
+<h1>Minha conta</h1>
+<div class="two-columns">
+  <mat-card
+    ><mat-card-content
+      ><h2>Seus dados</h2>
+      <p>{{ auth.user()?.email }}</p>
+      <form [formGroup]="profile" (ngSubmit)="saveProfile()">
+        <mat-form-field
+          ><mat-label>Nome completo</mat-label
+          ><input
+            matInput
+            formControlName="name"
+            autocomplete="name"
+            maxlength="160"
+          /><mat-error>Informe seu nome.</mat-error></mat-form-field
+        ><button mat-flat-button [disabled]="busy()">Salvar alterações</button>
+      </form></mat-card-content
+    ></mat-card
+  ><mat-card
+    ><mat-card-content
+      ><h2>Segurança</h2>
+      <form [formGroup]="password" (ngSubmit)="changePassword()">
+        <mat-form-field
+          ><mat-label>Senha atual</mat-label
+          ><input
+            matInput
+            formControlName="currentPassword"
+            type="password"
+            autocomplete="current-password"
+          /><mat-error>Informe a senha atual.</mat-error></mat-form-field
+        ><mat-form-field
+          ><mat-label>Nova senha</mat-label
+          ><input
+            matInput
+            formControlName="newPassword"
+            type="password"
+            autocomplete="new-password"
+          /><mat-error
+            >Use 12 caracteres ou mais, até 72 bytes.</mat-error
+          ></mat-form-field
+        ><button mat-stroked-button [disabled]="busy()">
+          Alterar senha e sair
+        </button>
+      </form></mat-card-content
+    ></mat-card
+  >
+</div>
+<div class="section-title"><h2>Meus endereços</h2></div>
+<div class="address-grid">
+  @for (a of addresses(); track a.id) {
+    <mat-card
+      ><mat-card-content
+        ><h3>{{ a.street }}, {{ a.number }}</h3>
+        <p>{{ a.complement }}</p>
+        <p>
+          {{ a.city }} / {{ a.state }} · CEP {{ a.postal_code }}
+        </p></mat-card-content
+      ><mat-card-actions
+        ><button mat-button (click)="edit(a)">Editar</button
+        ><button mat-button [disabled]="busy()" (click)="remove(a.id)">
+          Excluir endereço
+        </button></mat-card-actions
+      ></mat-card
+    >
+  } @empty {
+    <p>Adicione um endereço para receber seus pedidos.</p>
+  }
+</div>
+<mat-card id="address-editor"
+  ><mat-card-content
+    ><h2>{{ editing() ? "Editar endereço" : "Adicionar endereço" }}</h2>
+    <form class="form-grid" [formGroup]="address" (ngSubmit)="saveAddress()">
+      <mat-form-field
+        ><mat-label>Rua</mat-label
+        ><input
+          matInput
+          formControlName="street"
+          maxlength="200"
+          autocomplete="address-line1"
+        /><mat-error>Informe a rua.</mat-error></mat-form-field
+      ><mat-form-field
+        ><mat-label>Número</mat-label
+        ><input matInput formControlName="number" maxlength="30" /><mat-error
+          >Informe o número.</mat-error
+        ></mat-form-field
+      ><mat-form-field
+        ><mat-label>Complemento</mat-label
+        ><input
+          matInput
+          formControlName="complement"
+          maxlength="120" /></mat-form-field
+      ><mat-form-field
+        ><mat-label>Cidade</mat-label
+        ><input
+          matInput
+          formControlName="city"
+          maxlength="120"
+          autocomplete="address-level2"
+        /><mat-error>Informe a cidade.</mat-error></mat-form-field
+      ><mat-form-field
+        ><mat-label>Estado</mat-label
+        ><mat-select formControlName="state">
+          @for (state of states; track state) {
+            <mat-option [value]="state">{{ state }}</mat-option>
+          }</mat-select
+        ><mat-error>Selecione o estado.</mat-error></mat-form-field
+      ><mat-form-field
+        ><mat-label>CEP</mat-label
+        ><input
+          matInput
+          formControlName="postalCode"
+          inputmode="numeric"
+          maxlength="8"
+          autocomplete="postal-code"
+        /><mat-error>Use oito números.</mat-error></mat-form-field
+      >
+      <div class="actions">
+        <button mat-flat-button [disabled]="busy()">
+          {{ editing() ? "Salvar endereço" : "Adicionar endereço" }}
+        </button>
+        @if (editing()) {
+          <button mat-button type="button" (click)="cancel()">
+            Cancelar edição
+          </button>
+        }
+      </div>
+    </form></mat-card-content
+  ></mat-card
+>

@@ -1,0 +1,32 @@
+<div class="section-title">
+  <div>
+    <h2>Categorias</h2>
+    <p class="muted">Cada produto no seu lugar.</p>
+  </div>
+  <button mat-flat-button (click)="edit()">Nova categoria</button>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Categoria</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (category of categories(); track category.id) {
+        <tr>
+          <td>{{ category.name }}</td>
+          <td>
+            <button mat-button (click)="edit(category)">Editar</button
+            ><button mat-button (click)="remove(category)">Excluir</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="2">Nenhuma categoria cadastrada.</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
